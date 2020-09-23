@@ -3,19 +3,19 @@ const fs = require('fs');
 
 
 function installIfNeeded(options = {}) {
-  const {cwd = process.cwd(), ignoreScript = false} = options
+  const {cwd = process.cwd()} = options
   const content = fs.readFileSync('./package.json', 'utf-8')
   const pkg = JSON.parse(content)
   const needed = needsInstall(pkg, cwd)
   if (needed) {
-    npmInstallAt({ignoreScript})
+    npmInstallAt(options)
   }
   return needed
 }
 
 function npmInstallAt(options = {}) {
-  const {cwd = process.cwd(), ignoreScript = false} = options
-  const command = `npm install ${ignoreScript ? '--ignore-scripts' : ''}`;
+  const {cwd = process.cwd(), ignoreScript = false, saveDev=false, packages=[]} = options
+  const command = `npm install ${packages.length > 0 ? packages.join(' ') : ''} ${saveDev? '--save-dev': ''} ${ignoreScript ? '--ignore-scripts' : ''}`;
   child_process.execSync(command,
     {
       stdio: [0, 1, 2],
@@ -44,7 +44,7 @@ function modulePackagePath(name, cwd) {
     } catch (e) {
     }
   }
-  console.debug('Not found', {name, cwd: process.cwd(), moduleIds})
+  console.debug('Not found', {name, cwd, moduleIds})
   return null
 }
 
@@ -73,7 +73,7 @@ function needsInstall(pkg, cwd) {
     semver = require("semver");
   } catch (e) {
     if (e.code === 'MODULE_NOT_FOUND') {
-      npmInstallAt({cwd});
+      npmInstallAt({cwd, saveDev: true, packages:['semver']});
       semver = require("semver");
     } else throw e;
   }
